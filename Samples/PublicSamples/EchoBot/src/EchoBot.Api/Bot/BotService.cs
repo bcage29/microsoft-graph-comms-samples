@@ -207,11 +207,11 @@ namespace EchoBot.Api.Bot
             }
         }
 
-        public async Task SynthesizeText(string callId, string text)
+        public async Task SynthesizeText(string meetingId, string text)
         {
             try
             {
-                if (this.CallHandlers.TryGetValue(callId, out CallHandler? call))
+                if (this.CallHandlers.TryGetValue(meetingId, out CallHandler? call))
                 {
                     await call.BotMediaStream.SynthesizeText(text);
                 }
@@ -310,16 +310,18 @@ namespace EchoBot.Api.Bot
         /// <param name="args">The <see cref="CollectionEventArgs{ICall}" /> instance containing the event data.</param>
         private void CallsOnUpdated(ICallCollection sender, CollectionEventArgs<ICall> args)
         {
-            //TODO
             foreach (var call in args.AddedResources)
             {
                 var callHandler = new CallHandler(call, _settings, _logger);
-                this.CallHandlers[call.Id] = callHandler;
+                var meetingId = call.Resource.ChatInfo.ThreadId;
+                //this.CallHandlers[call.Id] = callHandler;
+                this.CallHandlers[meetingId] = callHandler;
             }
 
             foreach (var call in args.RemovedResources)
             {
-                if (this.CallHandlers.TryRemove(call.Id, out CallHandler? handler))
+                var meetingId = call.Resource.ChatInfo.ThreadId;
+                if (this.CallHandlers.TryRemove(meetingId, out CallHandler? handler))
                 {
                     handler.Dispose();
                 }

@@ -26,20 +26,27 @@ namespace EchoBot.Api.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult SendAsync([FromBody] string callId, string text)
+        public IActionResult SendAsync([FromBody] SynthesizerRequest body)
         {
             try
             {
-                _logger.LogInformation($"Synthesizing text: ${text}");
-                _botService.SynthesizeText(callId, text);
+                _logger.LogInformation($"Synthesizing text: ${body.text}");
+                _botService.SynthesizeText(body.meetingId, body.text);
                 return Ok();
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"Error occurred synthesizing text: ${text}. Method: {this.Request.Method}, {this.Request.Path}");
+                _logger.LogError(e, $"Error occurred synthesizing text: ${body. text}. Method: {this.Request.Method}, {this.Request.Path}");
 
                 return Problem(detail: e.StackTrace, statusCode: (int)HttpStatusCode.InternalServerError, title: e.Message);
             }
         }
+    }
+
+    public class SynthesizerRequest
+    {
+        public string meetingId { get; set; }
+
+        public string text { get; set; }
     }
 }
