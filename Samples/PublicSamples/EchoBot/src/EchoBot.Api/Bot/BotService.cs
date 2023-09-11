@@ -1,22 +1,19 @@
-﻿using System;
+﻿using System.Collections.Concurrent;
+using System.Net;
+using EchoBot.Api.Authentication;
+using EchoBot.Api.Constants;
 using EchoBot.Api.Models;
+using EchoBot.Api.Util;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Calls.Media;
 using Microsoft.Graph.Communications.Client;
+using Microsoft.Graph.Communications.Common;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Resources;
 using Microsoft.Skype.Bots.Media;
-using System.Collections.Concurrent;
-using System.Runtime;
-using EchoBot.Api.Authentication;
-using Microsoft.Graph.Communications.Common;
-using EchoBot.Api.ServiceSetup;
-using EchoBot.Api.Constants;
-using Microsoft.VisualBasic;
-using System.Net;
 
 namespace EchoBot.Api.Bot
 {
@@ -58,6 +55,7 @@ namespace EchoBot.Api.Bot
         /// </summary>
         /// <value>The client.</value>
         public ICommunicationsClient Client { get; private set; }
+
 
 
         /// <inheritdoc />
@@ -175,7 +173,7 @@ namespace EchoBot.Api.Bot
         /// </summary>
         /// <param name="joinCallBody">The join call body.</param>
         /// <returns>The <see cref="ICall" /> that was requested to join.</returns>
-        public async Task<ICall> JoinCallAsync(JoinCallBody joinCallBody)
+        public async Task<ICall?> JoinCallAsync(JoinCallBody joinCallBody)
         {
             try
             {
@@ -190,32 +188,38 @@ namespace EchoBot.Api.Bot
                 var joinParams = new JoinMeetingParameters(chatInfo, meetingInfo, mediaSession)
                 {
                     TenantId = tenantId,
-                };
+                };             
 
-                //if (!string.IsNullOrWhiteSpace(joinCallBody.DisplayName))
-                //{
-                //    // Teams client does not allow changing of ones own display name.
-                //    // If display name is specified, we join as anonymous (guest) user
-                //    // with the specified display name.  This will put bot into lobby
-                //    // unless lobby bypass is disabled.
-                //    joinParams.GuestIdentity = new Identity
-                //    {
-                //        Id = Guid.NewGuid().ToString(),
-                //        DisplayName = joinCallBody.DisplayName,
-                //    };
-                //}
+                var call = await this.Client.Calls().AddAsync(joinParams, scenarioId).ConfigureAwait(false);
+                call.GraphLogger.Info($"Call creation complete: {call.Id}");
+                _logger.LogInformation($"Call creation complete: {call.Id}");
 
-                var statefulCall = await this.Client.Calls().AddAsync(joinParams, scenarioId).ConfigureAwait(false);
-                statefulCall.GraphLogger.Info($"Call creation complete: {statefulCall.Id}");
-                _logger.LogInformation($"Call creation complete: {statefulCall.Id}");
-                return statefulCall;
+                // TODO Do we add call to handler collection here? or in the added resources?
+                //var callHandler = new CallHandler(call, _settings, _logger);
+                //this.CallHandlers[call.Id] = callHandler;
+
+                return call;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-
-                throw e;
+                _logger.LogError(ex, "error");
+                return null;
             }
-            
+        }
+
+        public async Task SynthesizeText(string callId, string text)
+        {
+            try
+            {
+                if (this.CallHandlers.TryGetValue(callId, out CallHandler? call))
+                {
+                    await call.BotMediaStream.SynthesizeText(text);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "error");
+            }
         }
 
         /// <summary>
@@ -259,8 +263,6 @@ namespace EchoBot.Api.Bot
         {
             args.AddedResources.ForEach(call =>
             {
-                // Get the policy recording parameters.
-
                 // The context associated with the incoming call.
                 IncomingContext incomingContext =
                     call.Resource.IncomingContext;
@@ -295,9 +297,9 @@ namespace EchoBot.Api.Bot
                     : this.CreateLocalMediaSession();
 
                 // Answer call
-                //call?.AnswerAsync(mediaSession).ForgetAndLogExceptionAsync(
-                //    call.GraphLogger,
-                //    $"Answering call {call.Id} with scenario {call.ScenarioId}.");
+                call?.AnswerAsync(mediaSession).ForgetAndLogExceptionAsync(
+                    call.GraphLogger,
+                    $"Answering call {call.Id} with scenario {call.ScenarioId}.");
             });
         }
 
@@ -308,15 +310,16 @@ namespace EchoBot.Api.Bot
         /// <param name="args">The <see cref="CollectionEventArgs{ICall}" /> instance containing the event data.</param>
         private void CallsOnUpdated(ICallCollection sender, CollectionEventArgs<ICall> args)
         {
-            foreach (var call in args.AddedResources)
-            {
-                var callHandler = new CallHandler(call, _settings, _logger);
-                this.CallHandlers[call.Id] = callHandler;
-            }
+            //TODO
+            //foreach (var call in args.AddedResources)
+            //{
+            //    var callHandler = new CallHandler(call, _settings, _logger);
+            //    this.CallHandlers[call.Id] = callHandler;
+            //}
 
             foreach (var call in args.RemovedResources)
             {
-                if (this.CallHandlers.TryRemove(call.Id, out CallHandler handler))
+                if (this.CallHandlers.TryRemove(call.Id, out CallHandler? handler))
                 {
                     handler.Dispose();
                 }

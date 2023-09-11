@@ -1,4 +1,6 @@
-﻿using EchoBot.Api.Bot;
+﻿using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Producer;
+using EchoBot.Api.Bot;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.Extensions.Logging;
@@ -36,6 +38,7 @@ namespace EchoBot.Api.Media
         private readonly SpeechConfig _speechConfig;
         private SpeechRecognizer _recognizer;
         private readonly SpeechSynthesizer _synthesizer;
+        private readonly EventHubProducerClient _producerClient;
         /// <summary>
         /// Initializes a new instance of the <see cref="CognitiveServicesService" /> class.
         public CognitiveServicesService(AppSettings settings, ILogger logger)
@@ -49,6 +52,7 @@ namespace EchoBot.Api.Media
             var audioConfig = AudioConfig.FromStreamOutput(_audioOutputStream);
             _synthesizer = new SpeechSynthesizer(_speechConfig, audioConfig);
 
+            _producerClient = new EventHubProducerClient("<CONNECTION_STRING>", "<HUB_NAME>");
         }
 
         /// <summary>
@@ -81,6 +85,24 @@ namespace EchoBot.Api.Media
             }
         }
 
+        public async Task TextToSpeech(string text)
+        {
+            // convert the text to speech
+            SpeechSynthesisResult result = await _synthesizer.SpeakTextAsync(text);
+            // take the stream of the result
+            // create 20ms media buffers of the stream
+            // and send to the AudioSocket in the BotMediaStream
+            using (var stream = AudioDataStream.FromResult(result))
+            {
+                var currentTick = DateTime.Now.Ticks;
+                MediaStreamEventArgs args = new MediaStreamEventArgs
+                {
+                    AudioMediaBuffers = Util.Utilities.CreateAudioMediaBuffers(stream, currentTick, _logger)
+                };
+                OnSendMediaBufferEventArgs(this, args);
+            }
+        }
+
         public virtual void OnSendMediaBufferEventArgs(object sender, MediaStreamEventArgs e)
         {
             if (SendMediaBuffer != null)
@@ -109,6 +131,7 @@ namespace EchoBot.Api.Media
                 _audioInputStream.Dispose();
                 _audioOutputStream.Dispose();
                 _synthesizer.Dispose();
+                await _producerClient.DisposeAsync();
 
                 _isRunning = false;
             }
@@ -158,7 +181,8 @@ namespace EchoBot.Api.Media
                         _logger.LogInformation($"RECOGNIZED: Text={e.Result.Text}");
                         // We recognized the speech
                         // Now do Speech to Text
-                        await TextToSpeech(e.Result.Text);
+                        //await TextToSpeech(e.Result.Text);
+                        await PublishRecognizedText(e.Result.Text);
                     }
                     else if (e.Result.Reason == ResultReason.NoMatch)
                     {
@@ -216,22 +240,27 @@ namespace EchoBot.Api.Media
             _isDraining = false;
         }
 
-        private async Task TextToSpeech(string text)
+        private async Task PublishRecognizedText(string text)
         {
-            // convert the text to speech
-            SpeechSynthesisResult result = await _synthesizer.SpeakTextAsync(text);
-            // take the stream of the result
-            // create 20ms media buffers of the stream
-            // and send to the AudioSocket in the BotMediaStream
-            using (var stream = AudioDataStream.FromResult(result))
+            // Create a batch of events 
+            using EventDataBatch eventBatch = await _producerClient.CreateBatchAsync();
+            if (!eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes(text))))
             {
-                var currentTick = DateTime.Now.Ticks;
-                MediaStreamEventArgs args = new MediaStreamEventArgs
-                {
-                    AudioMediaBuffers = Util.Utilities.CreateAudioMediaBuffers(stream, currentTick, _logger)
-                };
-                OnSendMediaBufferEventArgs(this, args);
+                // if it is too large for the batch
+                _logger.LogError($"Failed to add recognized text to the event data batch. Text: ${text}");
+            }
+
+            try
+            {
+                // Use the producer client to send the batch of events to the event hub
+                await _producerClient.SendAsync(eventBatch);
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to send recognized text to the event hub. Text: ${text}");
             }
         }
+
+        
     }
 }

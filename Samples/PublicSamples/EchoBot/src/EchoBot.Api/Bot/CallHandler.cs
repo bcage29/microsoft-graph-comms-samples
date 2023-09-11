@@ -6,6 +6,7 @@ using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Resources;
 using System.Timers;
 using Microsoft.Graph.Communications.Calls.Media;
+using EchoBot.Api.Util;
 
 namespace EchoBot.Api.Bot
 {
@@ -59,7 +60,7 @@ namespace EchoBot.Api.Bot
             this.Call.OnUpdated -= this.CallOnUpdated;
             this.Call.Participants.OnUpdated -= this.ParticipantsOnUpdated;
 
-            //this.BotMediaStream?.ShutdownAsync().ForgetAndLogExceptionAsync(this.GraphLogger);
+            this.BotMediaStream?.ShutdownAsync().ForgetAndLogExceptionAsync(this.GraphLogger);
         }
 
         /// <summary>
@@ -80,8 +81,7 @@ namespace EchoBot.Api.Bot
             {
                 if (BotMediaStream != null)
                 {
-                    //await BotMediaStream.StopMedia();
-                    //await this.BotMediaStream?.ShutdownAsync().ForgetAndLogExceptionAsync(this.GraphLogger);
+                    await this.BotMediaStream.ShutdownAsync().ForgetAndLogExceptionAsync(this.GraphLogger);
                 }
             }
         }

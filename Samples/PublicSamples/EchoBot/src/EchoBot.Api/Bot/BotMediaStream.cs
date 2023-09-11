@@ -137,6 +137,11 @@ namespace EchoBot.Api.Bot
             this.audioMediaBuffers.Clear();
         }
 
+        public async Task SynthesizeText(string text)
+        {
+            await _languageService.TextToSpeech(text);
+        }
+
         /// <summary>
         /// Initialize AV frame player.
         /// </summary>
