@@ -63,6 +63,7 @@ namespace EchoBot.Api.Bot
             ArgumentVerifier.ThrowOnNullArgument(settings, nameof(settings));
 
             _settings = settings;
+            _logger = logger;
 
             this.participants = new List<IParticipant>();
 
@@ -76,13 +77,11 @@ namespace EchoBot.Api.Bot
                 throw new InvalidOperationException("A mediaSession needs to have at least an audioSocket");
             }
 
+            var ignoreTask = this.StartAudioVideoFramePlayerAsync().ForgetAndLogExceptionAsync(this.GraphLogger, "Failed to start the player");
+
             this._audioSocket.AudioSendStatusChanged += OnAudioSendStatusChanged;
 
-            _logger = logger;
-
             this._audioSocket.AudioMediaReceived += this.OnAudioMediaReceived;
-
-            var ignoreTask = this.StartAudioVideoFramePlayerAsync().ForgetAndLogExceptionAsync(this.GraphLogger, "Failed to start the player");
 
             if (_settings.UseCognitiveServices)
             {
@@ -150,7 +149,7 @@ namespace EchoBot.Api.Bot
         {
             try
             {
-                await Task.WhenAll(this.audioSendStatusActive.Task).ConfigureAwait(false);
+                //await Task.WhenAll(this.audioSendStatusActive.Task).ConfigureAwait(false);
 
                 _logger.LogInformation("Send status active for audio and video Creating the audio video player");
                 this.audioVideoFramePlayerSettings =
@@ -199,6 +198,8 @@ namespace EchoBot.Api.Bot
 
             try
             {
+                if (!startVideoPlayerCompleted.Task.IsCompleted) { return; }
+
                 if (_languageService != null)
                 {
                     // send audio buffer to language service for processing

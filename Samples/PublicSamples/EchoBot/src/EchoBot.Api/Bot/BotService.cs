@@ -311,11 +311,11 @@ namespace EchoBot.Api.Bot
         private void CallsOnUpdated(ICallCollection sender, CollectionEventArgs<ICall> args)
         {
             //TODO
-            //foreach (var call in args.AddedResources)
-            //{
-            //    var callHandler = new CallHandler(call, _settings, _logger);
-            //    this.CallHandlers[call.Id] = callHandler;
-            //}
+            foreach (var call in args.AddedResources)
+            {
+                var callHandler = new CallHandler(call, _settings, _logger);
+                this.CallHandlers[call.Id] = callHandler;
+            }
 
             foreach (var call in args.RemovedResources)
             {

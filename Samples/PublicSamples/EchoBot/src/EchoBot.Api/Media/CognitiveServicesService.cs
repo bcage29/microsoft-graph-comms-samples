@@ -52,7 +52,7 @@ namespace EchoBot.Api.Media
             var audioConfig = AudioConfig.FromStreamOutput(_audioOutputStream);
             _synthesizer = new SpeechSynthesizer(_speechConfig, audioConfig);
 
-            _producerClient = new EventHubProducerClient("<CONNECTION_STRING>", "<HUB_NAME>");
+            _producerClient = new EventHubProducerClient(settings.EventHubConnectionString);
         }
 
         /// <summary>

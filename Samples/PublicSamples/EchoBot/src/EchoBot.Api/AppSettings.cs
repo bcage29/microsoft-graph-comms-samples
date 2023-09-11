@@ -101,6 +101,8 @@ namespace EchoBot.Api
         /// since the media settings needs a different URI
         /// </summary>
         public string MediaDnsName { get; set; }
+
+        public string EventHubConnectionString { get; set; }
     }
 }
 
