@@ -1,16 +1,12 @@
 ﻿using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
-using EchoBot.Api.Bot;
+using EchoBot.Api.Controllers;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.Extensions.Logging;
 using Microsoft.Skype.Bots.Media;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace EchoBot.Api.Media
 {
@@ -49,6 +45,8 @@ namespace EchoBot.Api.Media
             _speechConfig.SpeechSynthesisLanguage = settings.BotLanguage;
             _speechConfig.SpeechRecognitionLanguage = settings.BotLanguage;
 
+            //_speechConfig.SpeechSynthesisVoiceName = "en-US-JennyNeural";
+
             var audioConfig = AudioConfig.FromStreamOutput(_audioOutputStream);
             _synthesizer = new SpeechSynthesizer(_speechConfig, audioConfig);
 
@@ -85,10 +83,24 @@ namespace EchoBot.Api.Media
             }
         }
 
-        public async Task TextToSpeech(string text)
+        public async Task TextToSpeech(SynthesizerRequest req)
         {
+            var voiceName = string.IsNullOrEmpty(req.VoiceInfo.Name) ? "en-US-JennyNeural" : req.VoiceInfo.Name;
+            var role = string.IsNullOrEmpty(req.VoiceInfo.Role) ? "default" : req.VoiceInfo.Role;
+            var style = string.IsNullOrEmpty(req.VoiceInfo.Style) ? "default" : req.VoiceInfo.Style;
+            var styleDegree = req.VoiceInfo.StyleDegree ?? 1;
+            var ssml = @$"<speak version='1.0' xml:lang='en-US' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts'>
+                <voice name='{voiceName}'>
+                    <mstts:express-as role='{role}' style='{style}' styledegree='{styleDegree}'>
+                        {req.Message}
+                    </mstts:express-as>
+                </voice>
+            </speak>";
+
+
             // convert the text to speech
-            SpeechSynthesisResult result = await _synthesizer.SpeakTextAsync(text);
+            var result = await _synthesizer.SpeakSsmlAsync(ssml);
+            //SpeechSynthesisResult result = await _synthesizer.SpeakTextAsync(text);
             // take the stream of the result
             // create 20ms media buffers of the stream
             // and send to the AudioSocket in the BotMediaStream
@@ -207,7 +219,6 @@ namespace EchoBot.Api.Media
                 _recognizer.SessionStarted += async (s, e) =>
                 {
                     _logger.LogInformation("\nSession started event.");
-                    await TextToSpeech("Hello");
                 };
 
                 _recognizer.SessionStopped += (s, e) =>

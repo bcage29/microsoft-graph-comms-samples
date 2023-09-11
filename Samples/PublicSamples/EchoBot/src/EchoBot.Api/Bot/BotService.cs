@@ -2,6 +2,7 @@
 using System.Net;
 using EchoBot.Api.Authentication;
 using EchoBot.Api.Constants;
+using EchoBot.Api.Controllers;
 using EchoBot.Api.Models;
 using EchoBot.Api.Util;
 using Microsoft.Extensions.Logging;
@@ -207,13 +208,13 @@ namespace EchoBot.Api.Bot
             }
         }
 
-        public async Task SynthesizeText(string meetingId, string text)
+        public async Task SynthesizeText(SynthesizerRequest request)
         {
             try
             {
-                if (this.CallHandlers.TryGetValue(meetingId, out CallHandler? call))
+                if (this.CallHandlers.TryGetValue(request.MeetingId, out CallHandler? call))
                 {
-                    await call.BotMediaStream.SynthesizeText(text);
+                    await call.BotMediaStream.SynthesizeText(request);
                 }
             }
             catch (Exception ex)

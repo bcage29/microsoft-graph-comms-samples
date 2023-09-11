@@ -4,6 +4,7 @@ using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Client;
 using System.Collections.Concurrent;
 using EchoBot.Api.ServiceSetup;
+using EchoBot.Api.Controllers;
 
 namespace EchoBot.Api.Bot
 {
@@ -43,7 +44,7 @@ namespace EchoBot.Api.Bot
         void Initialize();
 
         void Dispose();
-        Task SynthesizeText(string callId, string text);
+        Task SynthesizeText(SynthesizerRequest request);
     }
 }
 

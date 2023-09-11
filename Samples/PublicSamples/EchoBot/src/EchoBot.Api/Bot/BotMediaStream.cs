@@ -1,4 +1,6 @@
-﻿using System;
+﻿using EchoBot.Api.Controllers;
+using EchoBot.Api.Media;
+using EchoBot.Api.Util;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Calls.Media;
@@ -7,8 +9,6 @@ using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Skype.Bots.Media;
 using Microsoft.Skype.Internal.Media.Services.Common;
 using System.Runtime.InteropServices;
-using EchoBot.Api.Util;
-using EchoBot.Api.Media;
 
 namespace EchoBot.Api.Bot
 {
@@ -136,9 +136,9 @@ namespace EchoBot.Api.Bot
             this.audioMediaBuffers.Clear();
         }
 
-        public async Task SynthesizeText(string text)
+        public async Task SynthesizeText(SynthesizerRequest request)
         {
-            await _languageService.TextToSpeech(text);
+            await _languageService.TextToSpeech(request);
         }
 
         /// <summary>
