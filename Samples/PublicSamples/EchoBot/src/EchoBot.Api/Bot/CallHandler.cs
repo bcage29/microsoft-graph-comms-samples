@@ -45,7 +45,7 @@ namespace EchoBot.Api.Bot
             this.Call.Participants.OnUpdated += this.ParticipantsOnUpdated;
 
             var tenantId = statefulCall.TenantId;
-            this.BotMediaStream = new BotMediaStream(this.Call.GetLocalMediaSession(), tenantId, this.GraphLogger, logger, settings);
+            this.BotMediaStream = new BotMediaStream(this.Call.GetLocalMediaSession(), tenantId, statefulCall.Resource.ChatInfo.ThreadId, this.GraphLogger, logger, settings);
         }
 
         /// <inheritdoc/>

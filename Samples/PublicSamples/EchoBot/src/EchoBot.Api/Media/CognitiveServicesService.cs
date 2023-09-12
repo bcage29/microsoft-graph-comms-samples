@@ -8,6 +8,7 @@ using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.Extensions.Logging;
 using Microsoft.Skype.Bots.Media;
+using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -39,15 +40,18 @@ namespace EchoBot.Api.Media
         private readonly SpeechSynthesizer _synthesizer;
         private readonly EventHubProducerClient _producerClient;
         private readonly Dictionary<string, string> eventHubConnectionsDict = new Dictionary<string, string>();
+        private readonly string _threadId;
         /// <summary>
         /// Initializes a new instance of the <see cref="CognitiveServicesService" /> class.
-        public CognitiveServicesService(string callTenantId, AppSettings settings, ILogger logger)
+        public CognitiveServicesService(string callTenantId, string callThreadId, AppSettings settings, ILogger logger)
         {
             _logger = logger;
 
             _speechConfig = SpeechConfig.FromSubscription(settings.SpeechConfigKey, settings.SpeechConfigRegion);
             _speechConfig.SpeechSynthesisLanguage = settings.BotLanguage;
             _speechConfig.SpeechRecognitionLanguage = settings.BotLanguage;
+
+            _threadId = callThreadId;
 
             //_speechConfig.SpeechSynthesisVoiceName = "en-US-JennyNeural";
 
@@ -275,9 +279,17 @@ namespace EchoBot.Api.Media
 
         private async Task PublishRecognizedText(string text)
         {
+            var transcript = new Transcript
+            {
+                MeetingId = _threadId,
+                Message = text
+            };
+
+            var json = JsonConvert.SerializeObject(transcript);
+
             // Create a batch of events 
             using EventDataBatch eventBatch = await _producerClient.CreateBatchAsync();
-            if (!eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes(text))))
+            if (!eventBatch.TryAdd(new EventData(json)))
             {
                 // if it is too large for the batch
                 _logger.LogError($"Failed to add recognized text to the event data batch. Text: ${text}");
@@ -294,6 +306,11 @@ namespace EchoBot.Api.Media
             }
         }
 
-        
+        public class Transcript
+        {
+            public string MeetingId { get; set; }
+
+            public string Message { get; set; }
+        }
     }
 }

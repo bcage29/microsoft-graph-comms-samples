@@ -52,6 +52,7 @@ namespace EchoBot.Api.Bot
         public BotMediaStream(
             ILocalMediaSession mediaSession,
             string tenantId,
+            string threadId,
             IGraphLogger graphLogger,
             ILogger logger,
             AppSettings settings
@@ -85,7 +86,7 @@ namespace EchoBot.Api.Bot
 
             if (_settings.UseCognitiveServices)
             {
-                _languageService = new CognitiveServicesService(tenantId, _settings, _logger);
+                _languageService = new CognitiveServicesService(tenantId, threadId, _settings, _logger);
                 _languageService.SendMediaBuffer += this.OnSendMediaBuffer;
             }
         }

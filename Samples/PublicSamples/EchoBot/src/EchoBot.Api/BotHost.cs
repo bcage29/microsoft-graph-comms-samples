@@ -98,6 +98,13 @@ public class BotHost
             });
         });
 
+        builder.Services.AddCors(o => o.AddPolicy("defaultPolicy", builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyMethod()
+                   .AllowAnyHeader();
+        }));
+
 
         _app = builder.Build();
 
@@ -116,7 +123,12 @@ public class BotHost
             _app.UseSwaggerUI();
         //}
 
-        
+        //_app.UseCors(options => 
+        //    options.AllowAnyOrigin(),
+
+        //);
+
+        _app.UseCors("defaultPolicy");
 
         //_app.UseHttpsRedirection();
 
