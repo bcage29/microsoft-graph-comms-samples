@@ -51,7 +51,7 @@ namespace EchoBot.Api.Bot
         /// <exception cref="InvalidOperationException">A mediaSession needs to have at least an audioSocket</exception>
         public BotMediaStream(
             ILocalMediaSession mediaSession,
-            string callId,
+            string tenantId,
             IGraphLogger graphLogger,
             ILogger logger,
             AppSettings settings
@@ -85,7 +85,7 @@ namespace EchoBot.Api.Bot
 
             if (_settings.UseCognitiveServices)
             {
-                _languageService = new CognitiveServicesService(_settings, _logger);
+                _languageService = new CognitiveServicesService(tenantId, _settings, _logger);
                 _languageService.SendMediaBuffer += this.OnSendMediaBuffer;
             }
         }

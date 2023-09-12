@@ -44,7 +44,8 @@ namespace EchoBot.Api.Bot
             this.Call.OnUpdated += this.CallOnUpdated;
             this.Call.Participants.OnUpdated += this.ParticipantsOnUpdated;
 
-            this.BotMediaStream = new BotMediaStream(this.Call.GetLocalMediaSession(), this.Call.Id, this.GraphLogger, logger, settings);
+            var tenantId = statefulCall.TenantId;
+            this.BotMediaStream = new BotMediaStream(this.Call.GetLocalMediaSession(), tenantId, this.GraphLogger, logger, settings);
         }
 
         /// <inheritdoc/>

@@ -102,7 +102,7 @@ namespace EchoBot.Api
         /// </summary>
         public string MediaDnsName { get; set; }
 
-        public string EventHubConnectionString { get; set; }
+        public string StorageConnectionString { get; set; }
     }
 }
 

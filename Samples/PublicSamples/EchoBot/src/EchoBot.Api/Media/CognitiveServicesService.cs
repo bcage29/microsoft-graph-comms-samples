@@ -1,5 +1,8 @@
-﻿using Azure.Messaging.EventHubs;
+﻿using Azure;
+using Azure.Data.Tables;
+using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
+using EchoBot.Api.Constants;
 using EchoBot.Api.Controllers;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
@@ -35,9 +38,10 @@ namespace EchoBot.Api.Media
         private SpeechRecognizer _recognizer;
         private readonly SpeechSynthesizer _synthesizer;
         private readonly EventHubProducerClient _producerClient;
+        private readonly Dictionary<string, string> eventHubConnectionsDict = new Dictionary<string, string>();
         /// <summary>
         /// Initializes a new instance of the <see cref="CognitiveServicesService" /> class.
-        public CognitiveServicesService(AppSettings settings, ILogger logger)
+        public CognitiveServicesService(string callTenantId, AppSettings settings, ILogger logger)
         {
             _logger = logger;
 
@@ -50,7 +54,25 @@ namespace EchoBot.Api.Media
             var audioConfig = AudioConfig.FromStreamOutput(_audioOutputStream);
             _synthesizer = new SpeechSynthesizer(_speechConfig, audioConfig);
 
-            _producerClient = new EventHubProducerClient(settings.EventHubConnectionString);
+            var serviceClient = new TableServiceClient(settings.StorageConnectionString);
+
+            // Create the table client.
+            var tableClient = serviceClient.GetTableClient(AppConstants.EventHubConnectionsTableName);
+
+            Pageable<TableEntity> queryResultsSelect = tableClient.Query<TableEntity>(select: new List<string>() { "ConnectionString", "PartitionKey", "RowKey" });
+            foreach (TableEntity qEntity in queryResultsSelect)
+            {
+                var tenantId = qEntity.GetString("PartitionKey");
+                var connectionString = qEntity.GetString("ConnectionString");
+                eventHubConnectionsDict.Add(tenantId, connectionString);
+            }
+
+            if (!eventHubConnectionsDict.TryGetValue(callTenantId, out string eventHubConnectionString))
+            {
+                throw new Exception("Unable to find an event hub connection string");
+            }
+
+            _producerClient = new EventHubProducerClient(eventHubConnectionString);
         }
 
         /// <summary>
