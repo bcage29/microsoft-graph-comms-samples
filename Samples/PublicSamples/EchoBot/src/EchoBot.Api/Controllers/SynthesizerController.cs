@@ -60,6 +60,6 @@ namespace EchoBot.Api.Controllers
 
         public string? Style { get; set; }
 
-        public int? StyleDegree { get; set; }
+        public float? StyleDegree { get; set; }
     }
 }

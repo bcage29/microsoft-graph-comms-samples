@@ -29,7 +29,6 @@
     <None Remove="Authentication\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Controllers\" />
     <Folder Include="ServiceSetup\" />
     <Folder Include="Authentication\" />
   </ItemGroup>
