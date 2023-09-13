@@ -57,7 +57,7 @@ namespace EchoBot.Api.Authentication
         /// <summary>
         /// The open identifier configuration.
         /// </summary>
-        private OpenIdConnectConfiguration openIdConfiguration;
+        private OpenIdConnectConfiguration? openIdConfiguration = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthenticationProvider" /> class.

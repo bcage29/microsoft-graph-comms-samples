@@ -41,6 +41,7 @@ namespace EchoBot.Api.Media
         private readonly EventHubProducerClient _producerClient;
         private readonly Dictionary<string, string> eventHubConnectionsDict = new Dictionary<string, string>();
         private readonly string _threadId;
+        private readonly string _botInstanceBaseUrl;
         /// <summary>
         /// Initializes a new instance of the <see cref="CognitiveServicesService" /> class.
         public CognitiveServicesService(string callTenantId, string callThreadId, AppSettings settings, ILogger logger)
@@ -52,6 +53,8 @@ namespace EchoBot.Api.Media
             _speechConfig.SpeechRecognitionLanguage = settings.BotLanguage;
 
             _threadId = callThreadId;
+
+            _botInstanceBaseUrl = $"https://{settings.ServiceDnsName}:{settings.BotInstanceExternalPort}";
 
             //_speechConfig.SpeechSynthesisVoiceName = "en-US-JennyNeural";
 
@@ -281,6 +284,7 @@ namespace EchoBot.Api.Media
         {
             var transcript = new Transcript
             {
+                BotInstanceUrl = _botInstanceBaseUrl,
                 MeetingId = _threadId,
                 Message = text
             };
@@ -308,6 +312,7 @@ namespace EchoBot.Api.Media
 
         public class Transcript
         {
+            public string BotInstanceUrl { get; set; }
             public string MeetingId { get; set; }
 
             public string Message { get; set; }
