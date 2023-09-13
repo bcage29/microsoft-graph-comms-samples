@@ -118,9 +118,10 @@ namespace EchoBot.Api.Media
             var role = string.IsNullOrEmpty(req.VoiceInfo.Role) ? "default" : req.VoiceInfo.Role;
             var style = string.IsNullOrEmpty(req.VoiceInfo.Style) ? "default" : req.VoiceInfo.Style;
             var styleDegree = req.VoiceInfo.StyleDegree ?? 1;
+            //<mstts:express-as role='{role}' style='{style}' styledegree='{styleDegree}'>
             var ssml = @$"<speak version='1.0' xml:lang='en-US' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts'>
                 <voice name='{voiceName}'>
-                    <mstts:express-as role='{role}' style='{style}' styledegree='{styleDegree}'>
+                    <mstts:express-as style='{style}'>
                         {req.Message}
                     </mstts:express-as>
                 </voice>
