@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Skype.Bots.Media;
 using Newtonsoft.Json;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace EchoBot.Api.Media
 {
@@ -39,7 +38,6 @@ namespace EchoBot.Api.Media
         private SpeechRecognizer _recognizer;
         private readonly SpeechSynthesizer _synthesizer;
         private readonly EventHubProducerClient _producerClient;
-        private readonly Dictionary<string, string> eventHubConnectionsDict = new Dictionary<string, string>();
         private readonly string _threadId;
         private readonly string _botInstanceBaseUrl;
         /// <summary>
@@ -66,20 +64,14 @@ namespace EchoBot.Api.Media
             // Create the table client.
             var tableClient = serviceClient.GetTableClient(AppConstants.EventHubConnectionsTableName);
 
-            Pageable<TableEntity> queryResultsSelect = tableClient.Query<TableEntity>(select: new List<string>() { "ConnectionString", "PartitionKey", "RowKey" });
-            foreach (TableEntity qEntity in queryResultsSelect)
-            {
-                var tenantId = qEntity.GetString("PartitionKey");
-                var connectionString = qEntity.GetString("ConnectionString");
-                eventHubConnectionsDict.Add(tenantId, connectionString);
-            }
-
-            if (!eventHubConnectionsDict.TryGetValue(callTenantId, out string eventHubConnectionString))
+            Pageable<TableEntity> queryResults = tableClient.Query<TableEntity>(filter: $"PartitionKey eq '{callTenantId}'", select: new List<string>() { "ConnectionString" });
+            if (!queryResults.Any())
             {
                 throw new Exception("Unable to find an event hub connection string");
             }
 
-            _producerClient = new EventHubProducerClient(eventHubConnectionString);
+            var connectionString = queryResults.First().GetString("ConnectionString");
+            _producerClient = new EventHubProducerClient(connectionString);
         }
 
         /// <summary>
