@@ -39,7 +39,7 @@ namespace EchoBot.Api.Bot
         /// </summary>
         /// <param name="joinCallBody">The join call body.</param>
         /// <returns>The <see cref="ICall" /> that was requested to join.</returns>
-        Task<ICall?> JoinCallAsync(JoinCallBody joinCallBody);
+        Task<ICall> JoinCallAsync(JoinCallBody joinCallBody);
 
         void Initialize();
 

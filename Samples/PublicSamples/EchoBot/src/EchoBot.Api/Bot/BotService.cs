@@ -174,38 +174,26 @@ namespace EchoBot.Api.Bot
         /// </summary>
         /// <param name="joinCallBody">The join call body.</param>
         /// <returns>The <see cref="ICall" /> that was requested to join.</returns>
-        public async Task<ICall?> JoinCallAsync(JoinCallBody joinCallBody)
+        public async Task<ICall> JoinCallAsync(JoinCallBody joinCallBody)
         {
-            try
+            // A tracking id for logging purposes. Helps identify this call in logs.
+            var scenarioId = Guid.NewGuid();
+
+            var (chatInfo, meetingInfo) = JoinInfo.ParseJoinURL(joinCallBody.JoinUrl);
+
+            var tenantId = (meetingInfo as OrganizerMeetingInfo).Organizer.GetPrimaryIdentity().GetTenantId();
+            var mediaSession = this.CreateLocalMediaSession();
+
+            var joinParams = new JoinMeetingParameters(chatInfo, meetingInfo, mediaSession)
             {
-                // A tracking id for logging purposes. Helps identify this call in logs.
-                var scenarioId = Guid.NewGuid();
+                TenantId = tenantId,
+            };             
 
-                var (chatInfo, meetingInfo) = JoinInfo.ParseJoinURL(joinCallBody.JoinUrl);
+            var call = await this.Client.Calls().AddAsync(joinParams, scenarioId).ConfigureAwait(false);
+            call.GraphLogger.Info($"Call creation complete: {call.Id}");
+            _logger.LogInformation($"Call creation complete: {call.Id}");
 
-                var tenantId = (meetingInfo as OrganizerMeetingInfo).Organizer.GetPrimaryIdentity().GetTenantId();
-                var mediaSession = this.CreateLocalMediaSession();
-
-                var joinParams = new JoinMeetingParameters(chatInfo, meetingInfo, mediaSession)
-                {
-                    TenantId = tenantId,
-                };             
-
-                var call = await this.Client.Calls().AddAsync(joinParams, scenarioId).ConfigureAwait(false);
-                call.GraphLogger.Info($"Call creation complete: {call.Id}");
-                _logger.LogInformation($"Call creation complete: {call.Id}");
-
-                // TODO Do we add call to handler collection here? or in the added resources?
-                //var callHandler = new CallHandler(call, _settings, _logger);
-                //this.CallHandlers[call.Id] = callHandler;
-
-                return call;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "error");
-                return null;
-            }
+            return call;
         }
 
         public async Task SynthesizeText(SynthesizerRequest request)

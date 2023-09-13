@@ -37,7 +37,6 @@ namespace EchoBot.Controllers
             try
             {
                 _logger.LogInformation("JOIN CALL");
-                //var body = await this.Request.Content.ReadAsStringAsync();
                 var call = await _botService.JoinCallAsync(joinCallBody).ConfigureAwait(false);
 
                 var values = new
@@ -52,7 +51,6 @@ namespace EchoBot.Controllers
             catch (Exception e)
             {
                 _logger.LogError(e, $"Received HTTP {this.Request.Method}, {this.Request.Path}");
-
                 return Problem(detail: e.StackTrace, statusCode: (int)HttpStatusCode.InternalServerError, title: e.Message);
             }
         }
